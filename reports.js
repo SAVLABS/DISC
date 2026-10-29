@@ -488,11 +488,22 @@ const DISC_AFFINITY = {
   C: { close: ["S", "D"], opposite: "I" },
 };
 
-/** Gráfico de araña con los cuatro totales (escala 0–40 por dimensión). */
+/** Contorno de la cabeza vista desde arriba (fondo del gráfico). */
+function discHeadSvg(c) {
+  return `
+    <g fill="#FBFAF7" stroke="#202020" stroke-width="2">
+      <ellipse cx="${c}" cy="${c + 6}" rx="140" ry="150"/>
+      <path d="M${c - 22} ${c - 150} Q${c} ${c - 178} ${c + 22} ${c - 150}" fill="none"/>
+      <path d="M${c - 140} ${c - 6} q-22 -6 -22 14 q0 18 22 16"/>
+      <path d="M${c + 140} ${c - 6} q22 -6 22 14 q0 18 -22 16"/>
+    </g>`;
+}
+
+/** Gráfico de araña sobre la cabeza, con los cuatro totales (escala 0–40). */
 function renderDiscRadarSvg(scores) {
-  const size = 320;
+  const size = 360;
   const c = size / 2;
-  const R = 105;
+  const R = 112;
   const MAX = 40;
   const axes = {
     C: [-1, -1],
@@ -513,17 +524,21 @@ function renderDiscRadarSvg(scores) {
   };
   const fmt = ([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`;
 
+  const quadrants = `
+    <line x1="${c}" y1="${c - 150}" x2="${c}" y2="${c + 150}" stroke="#202020" stroke-width="2"/>
+    <line x1="${c - 140}" y1="${c}" x2="${c + 140}" y2="${c}" stroke="#202020" stroke-width="2"/>`;
+
   const rings = [10, 20, 30, 40]
     .map((v) => {
       const pts = order.map((k) => fmt(pointAt(k, v))).join(" ");
-      return `<polygon points="${pts}" fill="none" stroke="#E5E0D6" stroke-width="1"/>`;
+      return `<polygon points="${pts}" fill="none" stroke="#CFC8BC" stroke-width="1" stroke-dasharray="3 3"/>`;
     })
     .join("");
 
   const spokes = order
     .map((k) => {
       const [x, y] = pointAt(k, MAX);
-      return `<line x1="${c}" y1="${c}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#E5E0D6" stroke-width="1"/>`;
+      return `<line x1="${c}" y1="${c}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#CFC8BC" stroke-width="1" stroke-dasharray="3 3"/>`;
     })
     .join("");
 
@@ -537,12 +552,22 @@ function renderDiscRadarSvg(scores) {
     })
     .join("");
 
+  // Letras grandes y tenues en cada cuadrante, como en la cabeza impresa.
+  const quadrantLetters = [
+    ["C", c - 62, c - 58],
+    ["D", c + 62, c - 58],
+    ["S", c - 62, c + 66],
+    ["I", c + 62, c + 66],
+  ]
+    .map(([k, x, y]) => `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="84" font-weight="800" fill="${DISC_COLORS[k]}" fill-opacity="0.22">${k}</text>`)
+    .join("");
+
   const labels = order
     .map((k) => {
-      const [lx, ly] = pointAt(k, MAX + 14);
-      const [vx, vy] = pointAt(k, (scores[k] || 0) + 7);
+      const [lx, ly] = pointAt(k, MAX + 12);
+      const [vx, vy] = pointAt(k, (scores[k] || 0) + 6);
       return `
-        <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="16" font-weight="800" fill="${DISC_COLORS[k]}">${k}</text>
+        <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="15" font-weight="800" fill="${DISC_COLORS[k]}">${k}</text>
         <text x="${vx.toFixed(1)}" y="${vy.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#202020">${scores[k] || 0}</text>`;
     })
     .join("");
@@ -551,9 +576,12 @@ function renderDiscRadarSvg(scores) {
 
   return `
     <svg class="disc-radar" viewBox="0 0 ${size} ${size}" role="img" aria-label="Gráfico de araña: ${summary}">
+      ${discHeadSvg(c)}
+      ${quadrants}
+      ${quadrantLetters}
       ${rings}
       ${spokes}
-      <polygon points="${area}" fill="rgba(184, 134, 43, 0.18)" stroke="#B8862B" stroke-width="2"/>
+      <polygon points="${area}" fill="rgba(184, 134, 43, 0.20)" stroke="#B8862B" stroke-width="2"/>
       ${dots}
       ${labels}
     </svg>`;
