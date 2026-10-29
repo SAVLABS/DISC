@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Administración · Evaluación DISC</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <header class="admin-header">
+    <a href="index.html" class="admin-brand" aria-label="Ir a la página de participantes">
+      <span class="admin-brand__mark" aria-hidden="true">
+        <i class="dot dot--d"></i><i class="dot dot--i"></i><i class="dot dot--s"></i><i class="dot dot--c"></i>
+      </span>
+      <span>Administración <strong>DISC</strong></span>
+    </a>
+    <span class="admin-header__tag">Área privada</span>
+  </header>
+
+  <main class="admin-main">
+
+    <!-- ==========================================================
+         ACCESO ADMINISTRATIVO
+    =========================================================== -->
+    <section class="admin-view" id="viewLogin">
+      <div class="admin-card">
+        <div class="admin-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="5" y="10.4" width="14" height="9.4" rx="2.2"/>
+            <path d="M8.2 10.4V8a3.8 3.8 0 0 1 7.6 0v2.4" stroke-linecap="round"/>
+            <circle cx="12" cy="15.1" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <h1 class="admin-card__title">Administración DISC</h1>
+        <p class="admin-card__subtitle">Acceso para la instructora.</p>
+
+        <form id="loginForm" novalidate>
+          <label class="field__label" for="pin">PIN de acceso</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <path d="M15.6 8.4a3.6 3.6 0 1 1-7.2 0 3.6 3.6 0 0 1 7.2 0z"/>
+              <path d="M4.8 19.4c1.1-2.9 3.7-4.4 7.2-4.4s6.1 1.5 7.2 4.4" stroke-linecap="round"/>
+            </svg>
+            <input class="input" type="password" id="pin" inputmode="numeric"
+                   placeholder="Introduce tu PIN" autocomplete="off"
+                   aria-describedby="pinError" required>
+          </div>
+          <p class="field__error" id="pinError" role="alert" hidden></p>
+
+          <button type="submit" class="btn btn--primary btn--block" id="btnLogin">
+            Ingresar
+          </button>
+        </form>
+
+        <p class="demo-hint">
+          <strong>Demostración:</strong> el PIN de prueba es <code>1234</code>.
+          Esta validación es simulada en el navegador y no constituye un
+          mecanismo de seguridad real.
+        </p>
+
+        <a class="back-link" href="index.html">← Volver a la evaluación</a>
+      </div>
+    </section>
+
+    <!-- ==========================================================
+         PANEL ADMINISTRATIVO
+    =========================================================== -->
+    <section class="admin-view" id="viewPanel" hidden>
+      <div class="panel-head">
+        <div>
+          <h1 class="panel-head__title">Control de la evaluación</h1>
+          <p class="panel-head__subtitle">Administra la disponibilidad del formulario.</p>
+        </div>
+        <div class="panel-head__actions">
+          <span class="status-pill" id="statusPill">
+            <span class="status-pill__dot" aria-hidden="true"></span>
+            <span id="statusPillText">Comprobando…</span>
+          </span>
+          <button type="button" class="btn btn--ghost" id="btnLogout">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <div class="admin-card admin-card--wide">
+        <div class="switch-row">
+          <div class="switch-row__info">
+            <h2 class="switch-row__title">Estado actual</h2>
+            <p class="switch-row__state" id="stateLabel">—</p>
+            <p class="switch-row__hint" id="stateHint">
+              Cuando la evaluación está activa, los participantes pueden iniciar
+              y completar el formulario desde la página pública.
+            </p>
+          </div>
+
+          <label class="switch" for="activeToggle">
+            <input type="checkbox" id="activeToggle" role="switch"
+                   aria-describedby="stateHint">
+            <span class="switch__track" aria-hidden="true"><span class="switch__thumb"></span></span>
+            <span class="switch__text" id="switchText">Activar</span>
+          </label>
+        </div>
+
+        <div class="divider" role="presentation"></div>
+
+        <div class="effect-box">
+          <h3 class="effect-box__title">Efecto del cambio</h3>
+          <p class="effect-box__text" id="effectText">
+            Al desactivar, la página pública mostrará el aviso de evaluación no
+            disponible y bloqueará el botón de inicio. El estado se comparte con
+            la página de participantes en este mismo navegador (localStorage,
+            solo para prototipado).
+          </p>
+        </div>
+
+        <p class="panel-note">
+          <strong>Nota de producción:</strong> en la versión final, el estado se
+          consultará y modificará mediante Google Apps Script, y el servidor
+          rechazará los envíos cuando la evaluación esté cerrada.
+        </p>
+
+        <div class="toast" id="adminToast" role="status" aria-live="polite" hidden></div>
+      </div>
+
+      <a class="back-link back-link--center" href="index.html">← Ver la página de participantes</a>
+    </section>
+
+  </main>
+
+  <footer class="admin-footer">
+    <p>Prototipo de administración · la validación del PIN debe implementarse en el servidor.</p>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>
