@@ -1702,3 +1702,8 @@ button {
 .results-affinity p:last-child {
   margin-bottom: 0;
 }
+
+/* Una sola columna de 4 características por pantalla */
+.option-row--single {
+  grid-template-columns: 1fr;
+}

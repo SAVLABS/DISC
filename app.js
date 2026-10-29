@@ -199,6 +199,7 @@
     participant: { fullName: "", email: "", position: "", company: "" },
     answers: {}, // { [groupId]: { scores: [valor 1-4 por opción, o null] } }
     currentGroup: 0,
+    currentColumn: 0, // 0 = columna izquierda, 1 = derecha
     isSubmitting: false,
     assessmentActive: true,
     result: null,
@@ -409,16 +410,30 @@
     }).length;
   }
 
+  /** Cada grupo se responde en dos pantallas: una por columna de 4. */
+  function totalPages() {
+    return questionnaire.groups.length * 2;
+  }
+
+  function currentPage() {
+    return state.currentGroup * 2 + state.currentColumn;
+  }
+
+  function isLastPage() {
+    return currentPage() === totalPages() - 1;
+  }
+
   function updateProgress() {
-    const total = questionnaire.groups.length;
-    const answered = answeredGroupCount();
-    // El progreso refleja el grupo actual sobre el total.
-    const pct = Math.round((state.currentGroup / total) * 100);
+    const total = totalPages();
+    // El progreso refleja la pantalla actual sobre el total.
+    const pct = Math.round((currentPage() / total) * 100);
     const bar = $("#quizProgressBar");
     const progress = $("#quizProgress");
     bar.style.width = pct + "%";
     progress.setAttribute("aria-valuenow", String(pct));
-    $("#groupCounter").textContent = `Grupo ${state.currentGroup + 1} de ${total}`;
+    $("#groupCounter").textContent =
+      `Grupo ${state.currentGroup + 1} de ${questionnaire.groups.length} · ` +
+      `Columna ${state.currentColumn + 1} de 2`;
   }
 
   /** Una característica: palabra, letra DISC y cuadro para el número. */
@@ -439,20 +454,19 @@
       </div>`;
   }
 
-  /** Cada fila empareja la columna izquierda (0–3) con la derecha (4–7). */
+  /** Muestra solo la columna actual (4 características). */
   function renderGroup() {
     const group = questionnaire.groups[state.currentGroup];
     const list = $("#optionList");
     const ans = groupState(group.id);
     const half = group.options.length / 2;
+    const start = state.currentColumn * half;
 
     list.innerHTML = "";
-    for (let row = 0; row < half; row++) {
+    for (let row = start; row < start + half; row++) {
       const li = document.createElement("li");
-      li.className = "option-row";
-      li.innerHTML =
-        optionCellHtml(group, row, ans.scores[row]) +
-        optionCellHtml(group, row + half, ans.scores[row + half]);
+      li.className = "option-row option-row--single";
+      li.innerHTML = optionCellHtml(group, row, ans.scores[row]);
       list.appendChild(li);
     }
 
@@ -466,7 +480,7 @@
     $("#btnPrevGroup").textContent =
       state.currentGroup === 0 ? "← Anterior" : "← Anterior";
     $("#btnNextGroup").innerHTML =
-      state.currentGroup === questionnaire.groups.length - 1
+      isLastPage()
         ? 'Completar evaluación <span class="btn__arrow" aria-hidden="true">→</span>'
         : 'Siguiente <span class="btn__arrow" aria-hidden="true">→</span>';
 
@@ -514,9 +528,12 @@
   function validateCurrentGroup() {
     const group = questionnaire.groups[state.currentGroup];
     const ans = groupState(group.id);
-    if (ans.scores.some((s) => s === null)) {
+    const half = group.options.length / 2;
+    const start = state.currentColumn * half;
+    const column = ans.scores.slice(start, start + half);
+    if (column.some((s) => s === null)) {
       showQuizMessage(
-        "Asigna un valor del 1 al 4 a cada característica antes de continuar."
+        "Asigna un valor del 1 al 4 a cada característica de esta columna antes de continuar."
       );
       return false;
     }
@@ -528,7 +545,7 @@
     if (!validateCurrentGroup()) return;
 
     // Verificar disponibilidad antes del último avance (envío).
-    if (state.currentGroup === questionnaire.groups.length - 1) {
+    if (isLastPage()) {
       await refreshAssessmentStatus();
       if (!state.assessmentActive) {
         showToast("La evaluación fue cerrada. No es posible enviar las respuestas.");
@@ -539,16 +556,25 @@
       return;
     }
 
-    state.currentGroup += 1;
+    if (state.currentColumn === 0) {
+      state.currentColumn = 1;
+    } else {
+      state.currentGroup += 1;
+      state.currentColumn = 0;
+    }
     renderGroup();
   }
 
   function prevGroup() {
-    if (state.currentGroup === 0) {
+    if (state.currentColumn === 1) {
+      state.currentColumn = 0;
+    } else if (state.currentGroup === 0) {
       goTo("instructions");
       return;
+    } else {
+      state.currentGroup -= 1;
+      state.currentColumn = 1;
     }
-    state.currentGroup -= 1;
     renderGroup();
   }
 
@@ -768,6 +794,7 @@
         return;
       }
       state.currentGroup = 0;
+      state.currentColumn = 0;
       renderGroup();
       goTo("questions");
     });
@@ -789,6 +816,7 @@
       state.participant = { fullName: "", email: "", position: "", company: "" };
       state.answers = {};
       state.currentGroup = 0;
+      state.currentColumn = 0;
       state.result = null;
       state.completedAt = null;
       restoreParticipantForm();
