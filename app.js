@@ -112,6 +112,48 @@
   };
 
   /* ======================================================================
+     3. ESTADO DE LA APLICACIÓN
+     ====================================================================== */
+
+  const state = {
+    screen: "home",
+    participant: { fullName: "", email: "", position: "", company: "" },
+    answers: {}, // { [groupId]: { scores: [valor 1-4 por opción, o null] } }
+    currentGroup: 0,
+    currentColumn: 0, // 0 = columna izquierda, 1 = derecha
+    isSubmitting: false,
+    assessmentActive: true,
+    result: null,
+    completedAt: null,
+  };
+
+  const questionnaire = QUESTIONNAIRE;
+
+  /* ======================================================================
+     4. UTILIDADES
+     ====================================================================== */
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  let toastTimer = null;
+  function showToast(message) {
+    const el = $("#toast");
+    el.textContent = message;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; }, 4200);
+  }
+
+  function formatDate(date) {
+    return date.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+
+  /* ======================================================================
      5. NAVEGACIÓN ENTRE PANTALLAS
      ====================================================================== */
 
