@@ -563,3 +563,42 @@ body {
     justify-content: space-between;
   }
 }
+
+/* Código QR de la evaluación */
+.qr-card {
+  margin-top: 1.2rem;
+}
+
+.qr-card__body {
+  display: flex;
+  gap: 1.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.qr-card__canvas {
+  width: 200px;
+  height: 200px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+.qr-card__info {
+  flex: 1;
+  min-width: 220px;
+}
+
+.qr-card__url {
+  margin: 0 0 0.9rem;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  word-break: break-all;
+}
+
+.qr-card__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}

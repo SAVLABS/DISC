@@ -70,6 +70,7 @@
   function showPanel() {
     $("#viewLogin").hidden = true;
     $("#viewPanel").hidden = false;
+    renderQr();
     refreshStatus();
   }
 
@@ -164,6 +165,65 @@
   }
 
   /* ======================================================================
+     CÓDIGO QR
+     ====================================================================== */
+
+  /** Dibuja el QR del enlace de la página de participantes (raíz del sitio). */
+  function renderQr() {
+    const url = new URL("/", window.location.href).href;
+    const qr = qrcode(0, "M");
+    qr.addData(url);
+    qr.make();
+
+    const count = qr.getModuleCount();
+    const cell = 10;
+    const margin = 4;
+    const size = (count + margin * 2) * cell;
+    const canvas = $("#qrCanvas");
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = "#202020";
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (qr.isDark(r, c)) {
+          ctx.fillRect((c + margin) * cell, (r + margin) * cell, cell, cell);
+        }
+      }
+    }
+    $("#qrUrl").textContent = url;
+  }
+
+  function qrBlob() {
+    return new Promise((resolve, reject) => {
+      $("#qrCanvas").toBlob((blob) => (blob ? resolve(blob) : reject(new Error("sin imagen"))), "image/png");
+    });
+  }
+
+  async function copyQrPng() {
+    try {
+      // La promesa se crea dentro del clic para conservar el permiso del navegador.
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": qrBlob() })]);
+      showToast("QR copiado. Ya puedes pegarlo como imagen.");
+    } catch (e) {
+      console.error("No se pudo copiar el QR:", e);
+      showToast("Tu navegador no permite copiar la imagen. Usa Descargar PNG.");
+    }
+  }
+
+  async function downloadQrPng() {
+    const blob = await qrBlob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "qr-evaluacion-disc.png";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  /* ======================================================================
      EVENTOS
      ====================================================================== */
 
@@ -206,6 +266,10 @@
 
     // Interruptor de disponibilidad
     $("#activeToggle").addEventListener("change", toggleStatus);
+
+    // Código QR
+    $("#btnCopyQr").addEventListener("click", copyQrPng);
+    $("#btnDownloadQr").addEventListener("click", downloadQrPng);
 
     // Cerrar sesión
     $("#btnLogout").addEventListener("click", async () => {

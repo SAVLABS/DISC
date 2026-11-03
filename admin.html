@@ -109,6 +109,21 @@
         <div class="toast" id="adminToast" role="status" aria-live="polite" hidden></div>
       </div>
 
+      <div class="admin-card admin-card--wide qr-card">
+        <h2 class="switch-row__title">Código QR de la evaluación</h2>
+        <p class="switch-row__hint">Los participantes pueden escanearlo para entrar a la evaluación.</p>
+        <div class="qr-card__body">
+          <canvas id="qrCanvas" class="qr-card__canvas" aria-label="Código QR de la evaluación"></canvas>
+          <div class="qr-card__info">
+            <p class="qr-card__url" id="qrUrl"></p>
+            <div class="qr-card__actions">
+              <button type="button" class="btn btn--primary" id="btnCopyQr">Copiar PNG</button>
+              <button type="button" class="btn btn--outline" id="btnDownloadQr">Descargar PNG</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <a class="back-link back-link--center" href="index.html">← Ver la página de participantes</a>
     </section>
 
@@ -118,6 +133,7 @@
     <p>DISC · Desarrollado por savlabscr.com · © 2026</p>
   </footer>
 
+  <script src="assets/vendor/qrcode.js"></script>
   <script src="config.js"></script>
   <script src="admin.js"></script>
 </body>
