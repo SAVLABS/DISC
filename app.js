@@ -532,6 +532,7 @@
       $("#processingSub").hidden = true;
       $(".loader").hidden = true;
       $("#sendError").hidden = false;
+      $("#sendErrorDetail").textContent = err.message ? `Detalle: ${err.message}` : "";
     } finally {
       state.isSubmitting = false;
       btnNext.disabled = false;
