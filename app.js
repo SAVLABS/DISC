@@ -431,9 +431,6 @@
     const progress = $("#quizProgress");
     bar.style.width = pct + "%";
     progress.setAttribute("aria-valuenow", String(pct));
-    $("#groupCounter").textContent =
-      `Grupo ${state.currentGroup + 1} de ${questionnaire.groups.length} · ` +
-      `Columna ${state.currentColumn + 1} de 2`;
   }
 
   /** Una característica: palabra, letra DISC y cuadro para el número. */
@@ -446,7 +443,6 @@
     return `
       <div class="${classes.join(" ")}">
         <span class="option__word">${opt.word}</span>
-        ${opt.disc ? `<span class="option__disc-tag option__disc-tag--${opt.disc.toLowerCase()}" title="Dimensión ${opt.disc}" aria-hidden="true">${opt.disc}</span>` : ""}
         <button type="button" class="scale__btn" data-index="${idx}"
           aria-label="${opt.word}. ${value === null ? "sin valor" : "valor " + value}. Activar para asignar o quitar.">
           ${value === null ? "" : value}
@@ -489,7 +485,7 @@
   }
 
   /**
-   * Cada cuadro asigna el siguiente número libre de su columna (1, 2, 3…),
+   * Cada cuadro asigna el siguiente número libre de su columna (4, 3, 2, 1),
    * según el orden en que se toca. Tocar un cuadro con número lo libera y
    * renumera los posteriores de esa columna.
    */
@@ -502,11 +498,11 @@
 
     if (current === null) {
       const used = scores.filter((s, i) => inColumn(i) && s !== null).length;
-      scores[optionIndex] = used + 1;
+      scores[optionIndex] = 4 - used;
     } else {
       scores[optionIndex] = null;
       scores.forEach((s, i) => {
-        if (inColumn(i) && s !== null && s > current) scores[i] = s - 1;
+        if (inColumn(i) && s !== null && s < current) scores[i] = s + 1;
       });
     }
 
