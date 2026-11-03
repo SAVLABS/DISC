@@ -1,18 +1,14 @@
 /* ==========================================================================
-   Evaluación DISC — Lógica de administración (demostración local)
+   Evaluación DISC — Lógica de administración
    --------------------------------------------------------------------------
-   IMPORTANTE: todo lo siguiente es una SIMULACIÓN de frontend.
-   - El PIN se valida en el navegador (no es seguridad real).
-   - El estado se guarda en localStorage y solo afecta a este origen.
-   En producción: validación de PIN, autorización y estado en el servidor
-   mediante Google Apps Script.
+   El PIN, la sesión y el estado de la evaluación viven en el servidor
+   (Google Apps Script). Este archivo solo llama a esas acciones.
    ========================================================================== */
 
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "disc_assessment_active"; // misma clave que app.js
-  const SESSION_KEY = "disc_admin_session";     // sesión simulada
+  const SESSION_KEY = "disc_admin_token"; // token de sesión devuelto por el servidor
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -21,30 +17,25 @@
      ====================================================================== */
 
   const AdminService = {
-    /**
-     * Valida el PIN de administración.
-     * TODO(GAS): sustituir por authenticateAdmin(pin) en el servidor.
-     * El PIN real NUNCA debe vivir en el HTML o el JS del frontend.
-     */
-    authenticateAdmin(pin) {
-      // PIN DE PRUEBA — solo para la demostración de interfaz.
-      return Promise.resolve({ ok: pin === "1234", demo: true });
+    /** Valida el PIN en el servidor y devuelve un token de sesión. */
+    async authenticateAdmin(pin) {
+      return discApi({ action: "login", pin });
     },
 
-    /** TODO(GAS): consultar estado real vía getAssessmentStatus(). */
-    getAssessmentStatus() {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return Promise.resolve({ active: stored === null ? true : stored === "1" });
+    /** Estado actual de la evaluación. */
+    async getAssessmentStatus() {
+      const data = await discApi({ action: "status" });
+      if (!data.ok) throw new Error(data.error);
+      return { active: data.active };
     },
 
-    /** TODO(GAS): modificar estado real vía updateAssessmentStatus(active),
-     *  con autorización validada en el servidor. */
-    updateAssessmentStatus(active) {
-      localStorage.setItem(STORAGE_KEY, active ? "1" : "0");
-      return Promise.resolve({ ok: true, demo: true });
+    /** Activa o desactiva la evaluación (requiere sesión válida). */
+    async updateAssessmentStatus(active) {
+      const token = sessionStorage.getItem(SESSION_KEY);
+      return discApi({ action: "setStatus", token, active });
     },
 
-    /** TODO(GAS): cerrar sesión real invalidando la sesión en el servidor. */
+    /** Cierra la sesión en este navegador. */
     logout() {
       sessionStorage.removeItem(SESSION_KEY);
       return Promise.resolve({ ok: true });
@@ -199,8 +190,7 @@
           $("#pin").select();
           return;
         }
-        // SIMULACIÓN de sesión (en producción: cookie/token del servidor).
-        sessionStorage.setItem(SESSION_KEY, "1");
+        sessionStorage.setItem(SESSION_KEY, res.token);
         showPanel();
       } catch (err) {
         console.error("Error de autenticación:", err);
@@ -231,7 +221,7 @@
   function init() {
     bindEvents();
     // Si ya hay una sesión simulada en esta pestaña, ir directo al panel.
-    if (sessionStorage.getItem(SESSION_KEY) === "1") {
+    if (sessionStorage.getItem(SESSION_KEY)) {
       showPanel();
     } else {
       showLogin();

@@ -88,38 +88,6 @@
     ],
   };
 
-  /**
-   * CÁLCULO DEL PERFIL (local, provisional).
-   * ---------------------------------------------------------------
-   * Suma la valoración (1–4) de cada característica según su letra DISC.
-   * La dimensión con mayor suma es el perfil predominante; en caso de
-   * empate gana la primera en el orden D, I, S, C.
-   * TODO(GAS): validar esta regla con la instructora y mover el cálculo
-   * al servidor.
-   */
-  function computeDiscResult(answers) {
-    const totals = { D: 0, I: 0, S: 0, C: 0 };
-    questionnaire.groups.forEach((g) => {
-      const scores = (answers[g.id] && answers[g.id].scores) || [];
-      g.options.forEach((opt, i) => {
-        if (opt.disc && scores[i]) totals[opt.disc] += scores[i];
-      });
-    });
-
-    // Cada letra puede sumar hasta 40; el total de las cuatro suma 100.
-    const scores = { ...totals };
-
-    // Si dos o más dimensiones empatan en el máximo, se muestran todas.
-    const max = Math.max(...Object.values(totals));
-    const predominants = Object.keys(totals).filter((k) => totals[k] === max);
-
-    return {
-      predominants,
-      predominant: predominants[0],
-      scores,
-    };
-  }
-
   /* ======================================================================
      2. CAPA DE DATOS — PUNTOS DE INTEGRACIÓN CON GOOGLE APPS SCRIPT
      ------------------------------------------------------------------
@@ -128,108 +96,20 @@
      (o por fetch a un endpoint), sin tocar el resto de la interfaz.
      ====================================================================== */
 
-  const STORAGE_KEY = "disc_assessment_active"; // clave de demo en localStorage
 
   const DataService = {
-    /**
-     * Consulta si la evaluación está activa.
-     * TODO(GAS): reemplazar por
-     *   google.script.run.withSuccessHandler(cb).withFailureHandler(err).getAssessmentStatus()
-     * El backend será la fuente de verdad (no localStorage).
-     */
-    getAssessmentStatus() {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      // Valor por defecto: activada.
-      return Promise.resolve({ active: stored === null ? true : stored === "1" });
+    /** Consulta si la evaluación está activa (el servidor es la fuente de verdad). */
+    async getAssessmentStatus() {
+      const data = await discApi({ action: "status" });
+      if (!data.ok) throw new Error(data.error);
+      return { active: data.active };
     },
 
-    /**
-     * Modifica la disponibilidad de la evaluación.
-     * TODO(GAS): reemplazar por updateAssessmentStatus(active) en el servidor,
-     * con autorización real del PIN validado allí.
-     */
-    updateAssessmentStatus(active) {
-      localStorage.setItem(STORAGE_KEY, active ? "1" : "0");
-      return Promise.resolve({ ok: true });
-    },
-
-    /** TODO(GAS): guardar datos del participante en Google Sheets. */
-    saveParticipantData(data) {
-      // Simulación local: no se envía nada a ningún servidor.
-      return Promise.resolve({ ok: true, demo: true, data });
-    },
-
-    /**
-     * Envía las respuestas y solicita el cálculo real del perfil.
-     * TODO(GAS): reemplazar por submitAssessment(data) en el servidor.
-     * El servidor deberá rechazar el envío si la evaluación está cerrada.
-     */
+    /** Envía las respuestas; el servidor valida, calcula el perfil y guarda la fila. */
     submitAssessment(payload) {
-      return new Promise((resolve) => {
-        // SIMULACIÓN: retardo artificial para mostrar la pantalla de proceso.
-        setTimeout(() => resolve({ ok: true, demo: true, payload }), 2400);
-      });
-    },
-
-    /** TODO(GAS): recuperar el resultado calculado por el servidor. */
-    getAssessmentResult(id, answers) {
-      return Promise.resolve({ ...computeDiscResult(answers), id });
-    },
-
-    /** TODO(GAS): solicitar la preparación del informe PDF en el servidor. */
-    generateReport(id) {
-      return Promise.resolve({ ok: false, pending: true, id });
-    },
-
-    /** TODO(GAS): validar el PIN en el servidor. Aquí es solo simulación. */
-    authenticateAdmin(pin) {
-      // PIN DE PRUEBA — solo para la demostración de frontend.
-      // En producción la validación DEBE hacerse en el servidor.
-      return Promise.resolve({ ok: pin === "1234", demo: true });
+      return discApi({ action: "submit", payload });
     },
   };
-
-  /* ======================================================================
-     3. ESTADO DE LA APLICACIÓN
-     ====================================================================== */
-
-  const state = {
-    screen: "home",
-    participant: { fullName: "", email: "", position: "", company: "" },
-    answers: {}, // { [groupId]: { scores: [valor 1-4 por opción, o null] } }
-    currentGroup: 0,
-    currentColumn: 0, // 0 = columna izquierda, 1 = derecha
-    isSubmitting: false,
-    assessmentActive: true,
-    result: null,
-    completedAt: null,
-  };
-
-  const questionnaire = QUESTIONNAIRE;
-
-  /* ======================================================================
-     4. UTILIDADES
-     ====================================================================== */
-
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-  let toastTimer = null;
-  function showToast(message) {
-    const el = $("#toast");
-    el.textContent = message;
-    el.hidden = false;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { el.hidden = true; }, 4200);
-  }
-
-  function formatDate(date) {
-    return date.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }
 
   /* ======================================================================
      5. NAVEGACIÓN ENTRE PANTALLAS
@@ -314,11 +194,6 @@
       note.textContent = "La evaluación está cerrada en este momento.";
     }
   }
-
-  // Reacciona a cambios de estado realizados desde la página de administración.
-  window.addEventListener("storage", (e) => {
-    if (e.key === STORAGE_KEY) refreshAssessmentStatus();
-  });
 
   /* ======================================================================
      7. PANTALLA 2 — DATOS DEL PARTICIPANTE
@@ -590,7 +465,6 @@
     $(".loader").hidden = false;
 
     const payload = {
-      // SIMULACIÓN: en producción estos datos irán al servidor.
       participant: { ...state.participant },
       answers: JSON.parse(JSON.stringify(state.answers)),
       questionnaireId: "real",
@@ -599,10 +473,14 @@
 
     try {
       const res = await DataService.submitAssessment(payload);
-      if (!res.ok) throw new Error("Respuesta no válida del servidor");
+      if (res.closed) {
+        showToast(res.error);
+        goTo("home");
+        return;
+      }
+      if (!res.ok) throw new Error(res.error || "Respuesta no válida del servidor");
 
-      const result = await DataService.getAssessmentResult(res.id || "local", payload.answers);
-      state.result = result;
+      state.result = res.result;
       state.completedAt = new Date();
       renderResults();
       goTo("results");
@@ -814,10 +692,6 @@
       const data = validateParticipantForm();
       if (!data) return;
       state.participant = data;
-
-      // TODO(GAS): llamar a DataService.saveParticipantData(data) aquí
-      // cuando el backend esté disponible.
-      DataService.saveParticipantData(data);
       goTo("instructions");
     });
 
