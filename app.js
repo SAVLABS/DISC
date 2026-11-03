@@ -172,9 +172,10 @@
       const status = await DataService.getAssessmentStatus();
       state.assessmentActive = status.active;
     } catch (e) {
-      // Ante un fallo de consulta, se asume cerrada por seguridad.
+      // Ante un fallo de consulta, se asume cerrada por seguridad y se avisa.
       state.assessmentActive = false;
-      console.warn("No se pudo consultar el estado de la evaluación:", e);
+      console.error("No se pudo consultar el estado de la evaluación:", e);
+      showToast("No se pudo conectar con el servidor: " + e.message);
     }
     renderAvailability();
   }
