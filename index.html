@@ -356,7 +356,7 @@
         <p class="results-eyebrow" id="resultsTitle">Tu perfil predominante es:</p>
 
         <div class="results-hero" id="resultsHero">
-          <div class="results-hero__badge" id="resultLetter" aria-hidden="true">I</div>
+          <div class="results-hero__badges" id="resultLetter" aria-hidden="true"></div>
           <div class="results-hero__info">
             <h2 class="results-hero__name" id="resultName">El Influyente</h2>
             <p class="results-hero__desc" id="resultDesc"></p>
@@ -394,13 +394,7 @@
             </p>
             <div class="results-report__actions">
               <button type="button" class="btn btn--primary" id="btnViewReport">Ver reporte completo</button>
-              <button type="button" class="btn btn--outline" id="btnDownloadPdf">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" class="btn__icon">
-                  <path d="M12 4.4v10.4M7.6 10.8L12 15.2l4.4-4.4" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M5 19h14" stroke-linecap="round"/>
-                </svg>
-                Descargar PDF
-              </button>
+              <div class="results-report__downloads" id="downloadButtons"></div>
             </div>
             <button type="button" class="link-btn" id="btnRestart">← Volver al inicio</button>
           </section>

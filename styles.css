@@ -1707,3 +1707,32 @@ button {
 .option-row--single {
   grid-template-columns: 1fr;
 }
+
+/* Empate: varias bolitas de perfil y varios botones de descarga */
+.results-hero__badges {
+  display: flex;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.results-report__downloads {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.report-profile + .report-profile {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+@media print {
+  .report-profile + .report-profile {
+    break-before: page;
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+  }
+}

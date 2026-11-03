@@ -109,15 +109,14 @@
     // Cada letra puede sumar hasta 40; el total de las cuatro suma 100.
     const scores = { ...totals };
 
-    const predominant = Object.keys(totals).reduce(
-      (best, k) => (totals[k] > totals[best] ? k : best),
-      "D"
-    );
+    // Si dos o más dimensiones empatan en el máximo, se muestran todas.
+    const max = Math.max(...Object.values(totals));
+    const predominants = Object.keys(totals).filter((k) => totals[k] === max);
 
     return {
-      predominant,
+      predominants,
+      predominant: predominants[0],
       scores,
-      description: DISC_REPORTS[predominant].sections[0].blocks[0].p,
     };
   }
 
@@ -624,14 +623,25 @@
 
   function renderResults() {
     const result = state.result;
-    const meta = DISC[result.predominant];
+    const letters = result.predominants;
+    const multiple = letters.length > 1;
 
-    // Tarjeta principal
-    $("#resultLetter").textContent = meta.letter;
-    $("#resultLetter").style.background = meta.color;
-    $("#resultName").textContent = meta.name;
-    $("#resultDesc").textContent = result.description;
-    $("#resultsHero").style.borderLeftColor = meta.color;
+    // Tarjeta principal: una bolita por perfil predominante (empate incluido).
+    $("#resultLetter").innerHTML = letters
+      .map((k) => `<span class="results-hero__badge" style="background:${DISC[k].color}">${k}</span>`)
+      .join("");
+    $("#resultsTitle").textContent = multiple
+      ? "Tus perfiles predominantes son:"
+      : "Tu perfil predominante es:";
+    $("#resultName").textContent = letters.map((k) => DISC[k].name).join(" y ");
+    $("#resultDesc").innerHTML = letters
+      .map((k) => {
+        const text = DISC_REPORTS[k].sections[0].blocks[0].p;
+        return multiple ? `<strong>${DISC[k].name}:</strong> ${text}` : text;
+      })
+      .join("<br><br>");
+    $("#resultsHero").style.borderLeftColor = DISC[letters[0]].color;
+    renderDownloadButtons(letters);
 
     const name = state.participant.fullName || "Participante";
     $("#resultParticipant").textContent = name;
@@ -641,7 +651,7 @@
 
     // Gráfico de araña y afinidad entre perfiles.
     $("#scoreRadar").innerHTML = renderDiscRadarSvg(result.scores);
-    $("#affinityContent").innerHTML = renderDiscAffinityHtml(result.predominant);
+    $("#affinityContent").innerHTML = result.predominants.map(renderDiscAffinityHtml).join("");
 
     // Barras de puntuación calculadas a partir de las respuestas.
     const bars = $("#scoreBars");
@@ -675,31 +685,68 @@
   }
 
   /** Encabezado común (nombre, fecha y perfil) para la vista previa y el PDF. */
-  function reportHeaderHtml(result, name, date) {
-    const meta = DISC[result.predominant];
+  function reportHeaderHtml(letters, name, date) {
+    const label = letters
+      .map((k) => `<span style="color:${DISC[k].color};font-weight:700">${k} — ${DISC[k].name}</span>`)
+      .join(" y ");
     return `
       <div class="report-meta">
         <span><strong>Participante:</strong> ${name}</span>
         <span><strong>Fecha:</strong> ${date}</span>
-        <span><strong>Perfil predominante:</strong>
-          <span style="color:${meta.color};font-weight:700">${meta.letter} — ${meta.name}</span>
-        </span>
+        <span><strong>Perfil${letters.length > 1 ? "es" : ""} predominante${letters.length > 1 ? "s" : ""}:</strong> ${label}</span>
       </div>`;
   }
 
-  function reportContentHtml(result) {
-    const report = DISC_REPORTS[result.predominant];
+  /** Informe con uno o varios perfiles (varios si hay empate). */
+  function reportContentHtml(result, letters = result.predominants) {
     const name = state.participant.fullName || "Participante";
     const date = formatDate(state.completedAt || new Date());
+    const profiles = letters
+      .map((k) => `
+        <div class="report-profile">
+          <h3 class="report-title">Reporte de perfil DISC · ${DISC_REPORTS[k].title}</h3>
+          ${renderDiscReportHtml(DISC_REPORTS[k])}
+        </div>`)
+      .join("");
     return {
       name,
       date,
-      html: `${reportHeaderHtml(result, name, date)}
-        <h3 class="report-title">Reporte de perfil DISC · ${report.title}</h3>
+      html: `${reportHeaderHtml(letters, name, date)}
         <section class="report-section"><h4>Mapa de dimensiones</h4>${renderDiscRadarSvg(result.scores)}</section>
-        <section class="report-section"><h4>Afinidad con otros perfiles</h4>${renderDiscAffinityHtml(result.predominant)}</section>
-        ${renderDiscReportHtml(report)}`,
+        <section class="report-section"><h4>Afinidad con otros perfiles</h4>${letters.map(renderDiscAffinityHtml).join("")}</section>
+        ${profiles}`,
     };
+  }
+
+  /** Un botón por perfil; si hay empate, además el informe con ambos. */
+  function renderDownloadButtons(letters) {
+    const container = $("#downloadButtons");
+    const multiple = letters.length > 1;
+    const actions = letters.map((k) => ({
+      label: multiple ? `Descargar PDF · ${DISC[k].name}` : "Descargar PDF",
+      run: () => downloadReportPdf([k]),
+    }));
+    if (multiple) {
+      actions.push({
+        label: "Descargar informe con ambos perfiles",
+        run: () => downloadReportPdf(letters),
+      });
+    }
+
+    container.innerHTML = "";
+    actions.forEach((action) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn--outline";
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" class="btn__icon">
+          <path d="M12 4.4v10.4M7.6 10.8L12 15.2l4.4-4.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 19h14" stroke-linecap="round"/>
+        </svg>
+        ${action.label}`;
+      btn.addEventListener("click", action.run);
+      container.appendChild(btn);
+    });
   }
 
   function openReportModal() {
@@ -717,8 +764,8 @@
    * donde se elige "Guardar como PDF". El título del documento define el
    * nombre sugerido del archivo.
    */
-  function downloadReportPdf() {
-    const { name, date, html } = reportContentHtml(state.result);
+  function downloadReportPdf(letters = state.result.predominants) {
+    const { name, date, html } = reportContentHtml(state.result, letters);
     const printEl = $("#printReport");
     printEl.innerHTML = html;
 
@@ -805,7 +852,6 @@
     // Resultados
     $("#btnViewReport").addEventListener("click", openReportModal);
 
-    $("#btnDownloadPdf").addEventListener("click", downloadReportPdf);
 
     $("#btnRestart").addEventListener("click", () => {
       // Reinicio completo para una nueva demostración.
