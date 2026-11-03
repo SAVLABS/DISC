@@ -1,8 +1,8 @@
 /* ==========================================================================
    Evaluación DISC — Backend (Google Apps Script)
    --------------------------------------------------------------------------
-   Pegar en: hoja de cálculo > Extensiones > Apps Script.
-   Hoja de datos: "Respuestas" (se crea sola si no existe).
+   Pegar en un proyecto de Apps Script (script.new o desde la hoja).
+   Hoja de datos: SPREADSHEET_ID, pestaña "Respuestas" (se crea sola si no existe).
 
    Funciones:
    - setup()          → ejecutar UNA vez. Crea la hoja y el PIN inicial (1234).
@@ -14,6 +14,7 @@
      Ejecutar como: Yo · Quién tiene acceso: Cualquier persona
    ========================================================================== */
 
+const SPREADSHEET_ID = "1l65yr11GHTt1PrHColin1HyJidgFDZWgOAOq_lL2Pyw";
 const SHEET_NAME = "Respuestas";
 const SESSION_HOURS = 6;
 
@@ -170,7 +171,7 @@ function computeResult_(answers) {
    ====================================================================== */
 
 function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
   if (sheet.getLastRow() === 0) {
