@@ -5,7 +5,7 @@
    (Implementar > Nueva implementación > Aplicación web).
    ========================================================================== */
 
-const DISC_API_URL = "PEGA_AQUI_LA_URL_DEL_WEB_APP";
+const DISC_API_URL = "https://script.google.com/macros/s/AKfycbyha9_3qIKC8UovRcwAOA7xmSNBxdLH0rfJHp2SyTwF71FiA3vykr2FJZyR0npzY8o59A/exec";
 
 /**
  * Envía una acción al servidor. Se usa text/plain para evitar la
