@@ -1601,15 +1601,10 @@ button {
 }
 
 @media print {
-  /* Solo se imprime el informe: lo demás de la página (cabecera, pie,
-     fondo, modal y avisos) queda oculto, aunque tenga posición fija. */
-  body * {
-    visibility: hidden !important;
-  }
-
-  #printReport,
-  #printReport * {
-    visibility: visible !important;
+  /* Solo se imprime el informe. display:none quita por completo la cabecera,
+     el pie, las pantallas y el modal, para que no ocupen la primera hoja. */
+  body > *:not(#printReport) {
+    display: none !important;
   }
 
   #printReport {
