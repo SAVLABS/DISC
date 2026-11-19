@@ -522,6 +522,9 @@
         return;
       }
       if (!res.ok) throw new Error(res.error || "Respuesta no válida del servidor");
+      if (!res.result) {
+        throw new Error("El servidor no devolvió el resultado. Revisa la versión desplegada de Apps Script.");
+      }
 
       state.result = res.result;
       state.completedAt = new Date();
