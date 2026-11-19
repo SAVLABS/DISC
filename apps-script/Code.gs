@@ -112,29 +112,25 @@ function submit_(payload) {
   const result = computeResult_(answers);
   if (!result.ok) return result;
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    const sheet = getSheet_();
-    sheet.appendRow([
-      new Date(),
-      fullName,
-      participant.email || "",
-      participant.position || "",
-      participant.company || "",
-      result.scores.D,
-      result.scores.I,
-      result.scores.S,
-      result.scores.C,
-      result.predominants.join(" / "),
-      JSON.stringify(answers),
-      payload.submittedAt || "",
-    ]);
-    const id = sheet.getLastRow();
-    return { ok: true, id: String(id), result: result };
-  } finally {
-    lock.releaseLock();
-  }
+  // appendRow ya es atómico por fila; no hace falta un bloqueo global, que
+  // hacía que los envíos simultáneos expiraran esperando el candado.
+  const sheet = getSheet_();
+  sheet.appendRow([
+    new Date(),
+    fullName,
+    participant.email || "",
+    participant.position || "",
+    participant.company || "",
+    result.scores.D,
+    result.scores.I,
+    result.scores.S,
+    result.scores.C,
+    result.predominants.join(" / "),
+    JSON.stringify(answers),
+    payload.submittedAt || "",
+  ]);
+  const id = sheet.getLastRow();
+  return { ok: true, id: String(id), result: result };
 }
 
 /**
